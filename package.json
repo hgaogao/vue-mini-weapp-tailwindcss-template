@@ -13,7 +13,8 @@
     "lint:style": "stylelint \"src/**/*.css\"",
     "type-check": "tsc",
     "dev": "cross-env NODE_ENV=development node build.js",
-    "build": "cross-env NODE_ENV=production node build.js"
+    "build": "cross-env NODE_ENV=production node build.js",
+    "postinstall": "weapp-tw patch"
   },
   "dependencies": {
     "@babel/runtime": "^7.26.0",
@@ -30,6 +31,7 @@
     "@rollup/plugin-node-resolve": "^15.3.0",
     "@rollup/plugin-replace": "^6.0.1",
     "@rollup/plugin-terser": "^0.4.4",
+    "autoprefixer": "^10.4.20",
     "babel-plugin-autocomplete-index": "^0.2.0",
     "babel-plugin-module-resolver": "^5.0.2",
     "babel-plugin-transform-inline-environment-variables": "^0.4.4",
@@ -48,9 +50,11 @@
     "rollup": "^4.25.0",
     "stylelint": "^16.10.0",
     "stylelint-config-standard": "^36.0.1",
+    "tailwindcss": "^3.4.16",
     "terser": "^5.36.0",
     "typescript": "^5.6.3",
-    "typescript-eslint": "^8.14.0"
+    "typescript-eslint": "^8.14.0",
+    "weapp-tailwindcss": "^3.7.0"
   },
   "browserslist": [
     "iOS >= 10",

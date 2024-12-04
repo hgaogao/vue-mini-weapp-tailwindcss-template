@@ -20,6 +20,11 @@ import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 import { green, bold } from 'kolorist';
 import { getPackageInfo } from 'local-pkg';
+import { createContext } from 'weapp-tailwindcss/core'
+
+const { transformJs, transformWxml, transformWxss } = createContext({
+  rem2rpx: true
+})
 
 let topLevelJobs = [];
 let bundleJobs = [];
@@ -220,22 +225,23 @@ async function processScript(filePath) {
   );
   // The `src/` prefix is added to to distinguish `src` and `src/src`.
   traverseAST(ast, pkg ? `src/${pkg}` : 'src');
-
+  const res = await transformJs(code)
+  code = res.code
   if (__PROD__) {
     code = (await minify(code, terserOptions)).code;
   }
 
   const destination = filePath.replace('src', 'dist').replace(/\.ts$/, '.js');
-  // Make sure the directory already exists when write file
-  await fs.copy(filePath, destination);
-  await fs.writeFile(destination, code);
+  await fs.outputFile(destination, code);
 }
 
 async function processTemplate(filePath) {
+  const code = await fs.readFile(filePath, 'utf8')
   const destination = filePath
     .replace('src', 'dist')
     .replace(/\.html$/, '.wxml');
-  await fs.copy(filePath, destination);
+  const wxmlCode = await transformWxml(code)
+  await fs.outputFile(destination, wxmlCode, 'utf8');
 }
 
 async function processStyle(filePath) {
@@ -245,7 +251,8 @@ async function processStyle(filePath) {
   let css;
   try {
     const result = await postcss(plugins).process(source, options);
-    css = result.css;
+    const { css: wxssCode } = await transformWxss(result.css);
+    css = wxssCode
   } catch (error) {
     console.error(`Failed to compile ${filePath}`);
 
@@ -258,19 +265,22 @@ async function processStyle(filePath) {
   const destination = filePath
     .replace('src', 'dist')
     .replace(/\.css$/, '.wxss');
-  // Make sure the directory already exists when write file
-  await fs.copy(filePath, destination);
-  await fs.writeFile(destination, css);
+
+  await fs.outputFile(destination, css);
 }
 
 const cb = async (filePath) => {
   if (filePath.endsWith('.ts') || filePath.endsWith('.js')) {
     await processScript(filePath);
+    // should process app.css for dev
+    await processStyle(path.resolve(import.meta.dirname, './src/app.css'));
     return;
   }
 
   if (filePath.endsWith('.html')) {
     await processTemplate(filePath);
+    // should process app.css for dev
+    await processStyle(path.resolve(import.meta.dirname, './src/app.css'));
     return;
   }
 
@@ -278,6 +288,7 @@ const cb = async (filePath) => {
     await processStyle(filePath);
     return;
   }
+
 
   await fs.copy(filePath, filePath.replace('src', 'dist'));
 };
